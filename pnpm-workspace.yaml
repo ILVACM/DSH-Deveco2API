@@ -1,0 +1,7 @@
+# pnpm workspace：把 packages/* 纳入 workspace
+packages:
+  - 'packages/*'
+
+# 本项目无需要禁用的依赖构建脚本（不像 opencode2dsh 的 pi-ai 传递依赖）
+# 保留此文件以便将来 pin pnpm 设置
+nodeLinker: hoisted

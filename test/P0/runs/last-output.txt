@@ -1,0 +1,100 @@
+════════════════════════════════════════════════════════════
+  P0 探针 · DevEco Code 免费模型通道
+  test/P0/probe.ts   node v24.21.0
+  2026-11-04 22:12:43
+════════════════════════════════════════════════════════════
+
+[1/8] 环境自检 ······································· PASS
+      node          : v24.21.0  (>= 22 ✓)
+      globals       : fetch : ok   ReadableStream : ok   AbortSignal.timeout : ok
+      data dir      : C:\Users\hbk\.local\share\deveco
+      config dir    : C:\Users\hbk\.config\deveco
+      auth.json     : ok  C:\Users\hbk\.local\share\deveco\auth.json
+      token.enc     : ok  C:\Users\hbk\.config\deveco\token.enc
+      token.dek     : ok  C:\Users\hbk\.config\deveco\token.dek
+      kekId         : kek-v1  →  C:\Users\hbk\.config\deveco\keys\kek-v1.bin : ok
+
+[2/8] 解包 DEK（KEK → DEK） ·························· PASS
+      kekId         : kek-v1
+      kek bytes     : 32
+      dek bytes     : 32
+
+[3/8] 解密 access / JWT ······························ PASS
+      type          : oauth
+      access        : DgEAAEqL...Fbc= (len 136)
+      refresh       : (空字符串，len 0)
+      jwt           : 3 段  userId=30086000744743676  exp=2026-12-02 15:48:54
+      expires       : 2026-11-04 22:33:59
+      状态          : 有效（剩余 21m）
+      isRealName    : true
+
+[4/8] 刷新 access token ······························ SKIP
+      原因          : token 未过期（剩余 21m），无需刷新
+      端点          : GET /authrouter/auth/api/jwToken/check（已过期时才调）
+
+[5/8] 拉取模型目录 ··································· PASS
+      HTTP          : 200   code=200   version=15   groups=1
+      模型 (3)      : GLM-5.3 | GLM-5.1 | Qwen3_VL_235B_A22B_Instruct
+      blacklist     : Qwen3_VL_235B_A22B_Instruct
+      暴露 (2)      : GLM-5.3 | GLM-5.1
+      small_model   : GLM-5.3
+
+[6/8] 流式对话 ······································· PASS
+      --- 6a 不传 thinking（断言）---
+      请求 model    : GLM-5.1  → 回显 GLM5_1_W4A8_PD-1.0.0
+      HTTP          : 200   ct=text/event-stream; charset=utf-8
+      首帧延迟      : 1079 ms      总耗时 : 1313 ms      chunk : 3
+      帧特征        : 帧带 usage : ✓            帧前 id: ✓
+      正文          : "可用"  (len 2)
+      finish        : stop          终止 : data: [DONE] ✓
+      --- 6b 传 thinking:enabled（INFO，不断言）---
+      请求 model    : GLM-5.1  max_tokens=512
+      思考 len      : 838
+      正文 len      : 0
+      finish        : length
+      结论          : 思考吃满预算 → 正文为空（已知行为，非故障）
+
+[7/8] 非流式对话 ····································· PASS
+      --- 7a 负向（INFO，不断言）---
+      结果          : /chat/completions + stream:false → HTTP 200，SSE 内错误
+      originalMessage : Stream Chat request for Model Service error: argument stream is false
+      --- 7b 正向（断言）---
+      结果          : /no-stream/chat/completions → HTTP 200   ct=application/json; charset=utf-8
+      content       : "OK！"  (len 3)
+      usage         : prompt 7 / completion 3 / total 10
+
+[8/8] 错误形态识别 ··································· PASS
+      --- 8a 坏 token（断言）---
+      HTTP          : 200   ct=application/json; charset=utf-8
+      body          : {"errorCode":4016,"errorMsg":"invalid accessToken.","session":{},"id":"8d7eb55c312a4c6f8610352017d57b92"}
+      --- 8b 缺 Chat-Id（断言）---
+      HTTP          : 400
+      originalMessage : SSE request missing header:Chat-Id
+      --- 8c 未知模型（INFO，重大发现）---
+      请求 model    : p0-probe-nonexistent-model
+      HTTP          : 200   bytes=204   chunks=1
+      回显 model    : (无)
+      正文          : ""  (len 0)
+      终止          : data: [DONE] ✗
+      → 未观察到回落（本次可能命中排队/截断，属偶发）
+
+════════════════════════════════════════════════════════════
+  P0 结果汇总
+════════════════════════════════════════════════════════════
+  [1] 环境自检                    PASS
+  [2] 解包 DEK（KEK → DEK）       PASS
+  [3] 解密 access / JWT         PASS
+  [4] 刷新 access token         SKIP   (前置条件不满足)
+  [5] 拉取模型目录                  PASS
+  [6] 流式对话                    PASS
+  [7] 非流式对话                   PASS
+  [8] 错误形态识别                  PASS
+
+  统计：PASS 7 · INFO 3 · SKIP 1 · FAIL 0
+
+  ✅ P0 通过（FAIL=0）
+  结论：凭据链路与上游协议均已验证，可以进入 P1。
+
+  报告：D:\dsh-deveco2api\test\P0\runs\p0-report.json
+  输出：D:\dsh-deveco2api\test\P0\runs\last-output.txt
+════════════════════════════════════════════════════════════

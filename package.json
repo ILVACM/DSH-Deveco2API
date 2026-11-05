@@ -1,0 +1,14 @@
+{
+  "name": "dsh-deveco2api",
+  "private": true,
+  "description": "Free DevEco Code built-in models (GLM-5.1 / GLM-5.3) for DeepSeek Harness (DSH): native dsh-llm adapter plugin, reuses the local deveco CLI login.",
+  "type": "module",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {
+    "dsh-deveco2api-plugin": "workspace:*"
+  }
+}

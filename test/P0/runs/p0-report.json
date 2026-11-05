@@ -1,0 +1,203 @@
+{
+  "schema": "p0-report/v1",
+  "startedAt": "2026-11-04T14:12:43.620Z",
+  "finishedAt": "2026-11-04T14:13:00.114Z",
+  "node": "v24.21.0",
+  "host": "win32 x64",
+  "devecoVersion": "0.3.0-stable",
+  "devecoVersionSource": "C:\\nodejs\\aliases\\default\\node_modules\\@deveco\\deveco-code\\package.json",
+  "account": {
+    "userId": "30086000744743676",
+    "nationalCode": null,
+    "isRealName": true
+  },
+  "refreshed": false,
+  "wroteBack": false,
+  "summary": {
+    "PASS": 7,
+    "INFO": 3,
+    "SKIP": 1,
+    "FAIL": 0
+  },
+  "ok": true,
+  "checks": [
+    {
+      "id": 1,
+      "name": "环境自检",
+      "status": "PASS",
+      "ms": 1,
+      "detail": {
+        "node": "v24.21.0",
+        "nodeMajor": 24,
+        "hasFetch": true,
+        "hasStream": true,
+        "hasTimeout": true,
+        "files": {
+          "auth.json": true,
+          "token.enc": true,
+          "token.dek": true
+        },
+        "kekId": "kek-v1",
+        "kekExists": true
+      }
+    },
+    {
+      "id": 2,
+      "name": "解包 DEK（KEK → DEK）",
+      "status": "PASS",
+      "ms": 2,
+      "detail": {
+        "kekId": "kek-v1",
+        "kekBytes": 32,
+        "dekBytes": 32
+      }
+    },
+    {
+      "id": 3,
+      "name": "解密 access / JWT",
+      "status": "PASS",
+      "ms": 1,
+      "detail": {
+        "type": "oauth",
+        "accessLen": 136,
+        "refreshLen": 0,
+        "jwtUserId": "30086000744743676",
+        "jwtExp": 1796197734,
+        "expires": 1793802839174,
+        "expired": false,
+        "isRealName": true
+      }
+    },
+    {
+      "id": 4,
+      "name": "刷新 access token",
+      "status": "SKIP",
+      "ms": 0,
+      "detail": {
+        "reason": "not_expired",
+        "remainingMs": 1275546
+      }
+    },
+    {
+      "id": 5,
+      "name": "拉取模型目录",
+      "status": "PASS",
+      "ms": 263,
+      "detail": {
+        "http": 200,
+        "code": 200,
+        "version": 15,
+        "groups": 1,
+        "models": [
+          "GLM-5.3",
+          "GLM-5.1",
+          "Qwen3_VL_235B_A22B_Instruct"
+        ],
+        "blacklist": [
+          "Qwen3_VL_235B_A22B_Instruct"
+        ],
+        "exposed": [
+          "GLM-5.3",
+          "GLM-5.1"
+        ],
+        "smallModel": "GLM-5.3"
+      }
+    },
+    {
+      "id": 6,
+      "name": "流式对话",
+      "status": "PASS",
+      "ms": 14133,
+      "detail": {
+        "6a": {
+          "http": 200,
+          "contentType": "text/event-stream; charset=utf-8",
+          "echoModel": "GLM5_1_W4A8_PD-1.0.0",
+          "firstMs": 1079,
+          "ms": 1313,
+          "chunks": 3,
+          "contentLen": 2,
+          "content": "可用",
+          "finish": "stop",
+          "hasDone": true,
+          "usagePerFrame": true,
+          "idLines": true,
+          "usage": {
+            "prompt": 10,
+            "completion": 2,
+            "total": 12
+          },
+          "leakedReasoning": false,
+          "ok": true
+        },
+        "6b": {
+          "http": 200,
+          "contentLen": 0,
+          "reasoningLen": 838,
+          "finish": "length",
+          "echoModel": "GLM5_1_W4A8_PD-1.0.0",
+          "sawReasoning": true
+        },
+        "model": "GLM-5.1",
+        "sub": {
+          "6b": "INFO"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "非流式对话",
+      "status": "PASS",
+      "ms": 1937,
+      "detail": {
+        "7a": {
+          "http": 200,
+          "hasErrorEvent": true,
+          "originalMessage": "Stream Chat request for Model Service error: argument stream is false"
+        },
+        "7b": {
+          "http": 200,
+          "contentType": "application/json; charset=utf-8",
+          "contentLen": 3,
+          "content": "OK！",
+          "hasUsage": true,
+          "ok": true
+        },
+        "sub": {
+          "7a": "INFO"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "错误形态识别",
+      "status": "PASS",
+      "ms": 150,
+      "detail": {
+        "8a": {
+          "http": 200,
+          "errorCode": 4016,
+          "raw": "{\"errorCode\":4016,\"errorMsg\":\"invalid accessToken.\",\"session\":{},\"id\":\"8d7eb55c312a4c6f8610352017d57b92\"}",
+          "ok": true
+        },
+        "8b": {
+          "http": 400,
+          "originalMessage": "SSE request missing header:Chat-Id",
+          "ok": true
+        },
+        "8c": {
+          "http": 200,
+          "bytes": 204,
+          "chunks": 1,
+          "echoModel": "",
+          "contentLen": 0,
+          "hasDone": false,
+          "fellBack": false
+        },
+        "sub": {
+          "8c": "INFO"
+        }
+      }
+    }
+  ]
+}

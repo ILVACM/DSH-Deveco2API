@@ -1,0 +1,8 @@
+# deveco2dsh DSH plugin — bundle patch: insert the plugin row (deployment-global).
+#
+# 默认零配置即可：插件读取本机 deveco CLI 已登录的凭据（~/.local/share/deveco/auth.json），
+# 自动刷新 token、自动拉取模型目录。覆盖项见 src/config.ts。
+- insert:
+    - id: deveco2dsh
+      name: 'dsh-deveco2api-plugin'
+      config: {}

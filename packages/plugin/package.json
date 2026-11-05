@@ -1,0 +1,51 @@
+{
+  "name": "dsh-deveco2api-plugin",
+  "version": "0.1.0",
+  "description": "Free DevEco Code built-in models (GLM-5.1 / GLM-5.3) for DeepSeek Harness (DSH): native dsh-llm adapter, reuses the local deveco CLI login.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts --out-dir lib --no-clean",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"test/*.test.ts\"",
+    "prepack": "node -e \"require('fs').rmSync('lib',{recursive:true,force:true})\" && npm run build && node ../../scripts/prepare-package.mjs"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "deveco-code",
+    "llm-adapter",
+    "llm-provider",
+    "free-models",
+    "typescript",
+    "nodejs"
+  ],
+  "license": "WTFPL",
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsdown": "^0.15.0",
+    "typescript": "^5.9.0"
+  }
+}

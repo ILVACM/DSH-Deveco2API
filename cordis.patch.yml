@@ -1,0 +1,10 @@
+# dsh-deveco2api DSH plugin — bundle patch: insert the plugin row (deployment-global).
+#
+# 插件以 npm 包 dsh-deveco2api-plugin 分发（根 package.json 的 dependencies 声明）；
+# 本 patch 只插入它的 Loader 行，不携带任何配置。
+# 默认零配置即可：插件读取本机 deveco CLI 已登录的凭据，自动刷新 token、
+# 自动拉取模型目录。覆盖项见 packages/plugin/src/config.ts。
+- insert:
+    - id: deveco2dsh
+      name: 'dsh-deveco2api-plugin'
+      config: {}
