@@ -11,6 +11,7 @@
  *   2. cordis.patch.yml 存在且非空
  *   3. package.json 的 dsh.bundle.patch 指向存在的文件
  *   4. 产物里不含任何凭据文件
+ *   5. 声明 dsh.client 时 lib/client.js 必须存在
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -27,7 +28,7 @@ const pkg = JSON.parse(readFileSync(join(pluginDir, 'package.json'), 'utf8'))
 
 // 1. 构建产物入口
 const entry = join(pluginDir, pkg.main ?? 'lib/index.js')
-if (existsSync(entry)) ok('lib/index.js 已构建') 
+if (existsSync(entry)) ok('lib/index.js 已构建')
 else fail('lib/index.js 缺失 — 先跑 corepack pnpm build')
 
 // 2. bundle patch
@@ -47,6 +48,13 @@ if (/DgEA[A-Za-z0-9+/]{40,}|eyJ[A-Za-z0-9_-]{40,}/.test(entryText)) {
   fail('lib/index.js 疑似含真实 token（应只有文件名引用）')
 } else {
   ok('产物无凭据泄露')
+}
+
+// 5. dsh.client 声明时 lib/client.js 必须存在
+if (pkg.dsh?.client && !existsSync(join(pluginDir, 'lib', 'client.js'))) {
+  fail('lib/client.js 缺失（package.json 声明了 dsh.client）')
+} else if (pkg.dsh?.client) {
+  ok('lib/client.js 已构建')
 }
 
 if (problems.length > 0) {

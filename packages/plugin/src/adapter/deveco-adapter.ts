@@ -18,6 +18,9 @@ import { toUpstreamBody, type HarnessGenerateOptions } from './messages.ts'
 import { streamChat } from './wire.ts'
 import { ensureValidToken, type RefreshFailure } from '../auth/refresh.ts'
 import type { ModelCatalog, CatalogModel } from '../catalog.ts'
+import { effectiveSuggested as effectiveSuggestedFn, type CapacityFile } from '../capacity.ts'
+import { solveModelPolicy } from '../compaction-policy.ts'
+import { guardBeforeRequest, type HostServices, type CompactState } from '../context-guard.ts'
 
 export const PROVIDER_ID = 'deveco2dsh'
 
@@ -53,10 +56,30 @@ interface ResolvedModel {
 export class DevEcoAdapter {
   #catalog: ModelCatalog
   #logger: PluginContext['logger'] | undefined
+  #opts: {
+    capacity?: () => CapacityFile
+    services?: HostServices
+    getSession?: () => unknown
+    state?: CompactState
+    cooldownMs?: number
+    blockOnOversizedHistory?: boolean
+  } | undefined
 
-  constructor(catalog: ModelCatalog, logger?: PluginContext['logger']) {
+  constructor(
+    catalog: ModelCatalog,
+    logger?: PluginContext['logger'],
+    opts?: {
+      capacity?: () => CapacityFile
+      services?: HostServices
+      getSession?: () => unknown
+      state?: CompactState
+      cooldownMs?: number
+      blockOnOversizedHistory?: boolean
+    },
+  ) {
     this.#catalog = catalog
     this.#logger = logger
+    this.#opts = opts
   }
 
   /** 必须返回与注册名一致的 id。 */
@@ -91,7 +114,7 @@ export class DevEcoAdapter {
       id: model,
       name: info?.name ?? model,
       inputModalities: ['text'],
-      context: { contextWindow: info?.contextWindow ?? DEFAULT_CONTEXT_WINDOW },
+      context: { contextWindow: contextWindowFor(info, this.#opts?.capacity?.(), model) },
       defaultMaxTokens: Math.max(info?.maxTokens ?? DEFAULT_MAX_TOKENS, 128),
     }
     const efforts = reasoningEfforts(info)
@@ -135,6 +158,34 @@ export class DevEcoAdapter {
     if (!token.ok) {
       yield* yieldTerminalError(describeRefreshFailure(token.failure), 'AUTH')
       return
+    }
+
+    // 2.5 上下文守护（每次发请求之前；取不到宿主服务/共享状态则跳过）
+    // 触发线用「建议上下文」effectiveSuggested，与 resolveModel() 报给 DSH 的
+    // 反推 W 分离：W 供 compaction-basic 算阈值，effectiveSuggested 才是插件自己的线。
+    const services = this.#opts?.services
+    const state = this.#opts?.state
+    if (services && state) {
+      const info = this.#catalog.get(options.model)
+      const suggested = info?.suggested ?? info?.contextWindow ?? DEFAULT_CONTEXT_WINDOW
+      const rec = this.#opts?.capacity?.()?.models?.[options.model]
+      const effectiveSuggested = rec ? effectiveSuggestedFn(suggested, rec.actualMax) : suggested
+      const guard = await guardBeforeRequest({
+        services,
+        session: this.#opts?.getSession?.() ?? null,
+        effectiveSuggested,
+        state,
+        cooldownMs: this.#opts?.cooldownMs ?? 60_000,
+        blockOnOversizedHistory: this.#opts?.blockOnOversizedHistory ?? true,
+      })
+      if (guard.decision.triggered) {
+        this.#logger?.info?.(`deveco2dsh: 上下文守护触发压缩 (${guard.decision.reason}, used=${guard.decision.used}, usedAfter=${guard.usedAfter})`)
+      }
+      // 压后复核不达标 → 绝不带着必然超限的历史发请求
+      if (guard.blocked) {
+        yield* yieldTerminalError(guard.message, 'CONTEXT_WINDOW_EXCEEDED')
+        return
+      }
     }
 
     // 3. 构造请求
@@ -193,6 +244,30 @@ function reasoningEfforts(info: CatalogModel | undefined): DevEcoReasoningEffort
     name: level.charAt(0).toUpperCase() + level.slice(1),
     ...(level === 'off' ? { description: '关闭思考（不向上游传 reasoning_effort，保持默认）' } : {}),
   }))
+}
+
+/**
+ * resolveModel() 报给 DSH 的 contextWindow。
+ *
+ * 分离原则：这个值同时被 dsh-compaction-basic 用作宿主公式的 W，
+ * 因此按「目标阈值 = floor(actualMax × 0.8)」反推得到（W = target + OMax），
+ * 使宿主 min(W×ratio, W−O−headroom) 恒等于目标；与插件自己的触发线
+ * （effectiveSuggested，见 #stream 守护块）是两个独立数字。
+ */
+function contextWindowFor(
+  info: CatalogModel | undefined,
+  file: CapacityFile | undefined,
+  model: string,
+): number {
+  const suggested = info?.suggested ?? info?.contextWindow ?? DEFAULT_CONTEXT_WINDOW
+  const OMax = info?.maxTokens ?? DEFAULT_MAX_TOKENS
+  const rec = file?.models?.[model]
+  if (!rec) return suggested
+  return solveModelPolicy({
+    actualMax: rec.actualMax,
+    reservedCompletionTokens: OMax,
+    targetRatio: 0.8,
+  }).contextWindow
 }
 
 export { yieldTerminalError }

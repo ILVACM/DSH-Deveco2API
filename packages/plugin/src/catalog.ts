@@ -31,6 +31,8 @@ export interface CatalogModel {
   /** 目录声明的思考档位（如 ["low","high","max"]）。 */
   effortLevels: string[]
   defaultEffort?: string
+  /** 目录声明的 context_window（建议上下文基数）。 */
+  suggested?: number
 }
 
 export interface CatalogSnapshot {
@@ -98,6 +100,7 @@ export function parseCatalog(raw: unknown): { models: CatalogModel[]; exposed: C
           id: modelId,
           name: modelId,
           contextWindow: typeof cfg['context_window'] === 'number' ? (cfg['context_window'] as number) : 32768,
+          suggested: typeof cfg['context_window'] === 'number' ? (cfg['context_window'] as number) : 32768,
           maxTokens: parseOutputLimit(cfg['output']),
           reasoning,
           effortLevels: efforts.levels,
@@ -181,6 +184,20 @@ export class ModelCatalog {
   list(): CatalogModel[] {
     return this.#exposed
   }
+
+  /** 供设置页「刷新模型列表」调用；等价于一次 refreshOnce。 */
+  async refreshNow(): Promise<void> {
+    await this.refreshOnce()
+  }
+
+  /** 模型 id → 目录建议值（供 capacity 层）。 */
+  get suggestedMap(): Record<string, number> {
+    return Object.fromEntries(this.#models.map((m) => [m.id, m.suggested ?? m.contextWindow]))
+  }
+
+  get catalogVersion(): number { return this.#version }
+
+  get lastError(): string { return this.#lastError }
 
   /** 按 id 查找模型元数据。 */
   get(id: string): CatalogModel | undefined {
