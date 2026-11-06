@@ -103,7 +103,7 @@ function mapStopReason(message: DoneMessage, contextWindow: number): FinishReaso
   }
   switch (message.stopReason) {
     case 'stop': {
-      const hasContent = message.content.some((b) => b.type === 'text' || b.type === 'toolCall')
+      const hasContent = message.content.some((b) => b.type === 'text' || b.type === 'tool-call')
       if (!hasContent) {
         return {
           kind: 'error',
